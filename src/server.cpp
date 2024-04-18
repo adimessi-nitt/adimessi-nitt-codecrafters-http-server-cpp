@@ -9,8 +9,8 @@
 #include <netdb.h>
 #include <netinet/in.h> // Add this line for sockaddr_in
 #include <netinet/in.h>
-1
-#include <cstdio> // Include for send function
+#include <cstdio> 
+// Include for send function
 int main(int argc, char **argv) {
   // You can use print statements as follows for debugging, they'll be visible when running tests.
   std::cout << "Logs from your program will appear here!\n";
@@ -62,7 +62,6 @@ int main(int argc, char **argv) {
   if (bytes_sent < 0) {
     std::cerr << "Failed to send response\n";
   } else {
-1
     std::cout << "OK Response sent\n";
   }
   
