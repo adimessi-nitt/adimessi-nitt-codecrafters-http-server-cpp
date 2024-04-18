@@ -8,8 +8,7 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <netinet/in.h> // Add this line for sockaddr_in
-#include <netinet/in.h>
-#include <cstdio> 
+#include<cstdio>
 // Include for send function
 int main(int argc, char **argv) {
   // You can use print statements as follows for debugging, they'll be visible when running tests.
@@ -45,7 +44,7 @@ int main(int argc, char **argv) {
   
   struct sockaddr_in client_addr;
   socklen_t client_addr_len = sizeof(client_addr); // Change int to socklen_t
-  socklen_t client_addr_len = sizeof(client_addr);
+  // socklen_t client_addr_len = sizeof(client_addr);
   
   std::cout << "Waiting for a client to connect...\n";
   
@@ -66,7 +65,7 @@ int main(int argc, char **argv) {
   }
   
   close(client_fd); // Close the client socket, not the server socket
-  close(client_fd);
+  // close(client_fd);
   close(server_fd);
   
   return 0;
