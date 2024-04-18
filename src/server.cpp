@@ -7,19 +7,18 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <netdb.h>
-
+#include <netinet/in.h> // Add this line for sockaddr_in
+#include <netinet/in.h>
+1
+#include <cstdio> // Include for send function
 int main(int argc, char **argv) {
   // You can use print statements as follows for debugging, they'll be visible when running tests.
   std::cout << "Logs from your program will appear here!\n";
-
-  // Uncomment this block to pass the first stage
-  //
   int server_fd = socket(AF_INET, SOCK_STREAM, 0);
   if (server_fd < 0) {
-   std::cerr << "Failed to create server socket\n";
-   return 1;
+    std::cerr << "Failed to create server socket\n";
+    return 1;
   }
-  
   // Since the tester restarts your program quite often, setting REUSE_PORT
   // ensures that we don't run into 'Address already in use' errors
   int reuse = 1;
@@ -45,14 +44,31 @@ int main(int argc, char **argv) {
   }
   
   struct sockaddr_in client_addr;
-  int client_addr_len = sizeof(client_addr);
+  socklen_t client_addr_len = sizeof(client_addr); // Change int to socklen_t
+  socklen_t client_addr_len = sizeof(client_addr);
   
   std::cout << "Waiting for a client to connect...\n";
   
-  accept(server_fd, (struct sockaddr *) &client_addr, (socklen_t *) &client_addr_len);
-  std::cout << "Client connected\n";
+  int client_fd = accept(server_fd, (struct sockaddr *) &client_addr, &client_addr_len);
+  if (client_fd < 0) {
+    std::cerr << "Failed to accept client connection\n";
+    return 1;
+  }
   
+  std::cout << "Client connected\n";
+  std::cout << "Sending response\n";
+  const char *response = "HTTP/1.1 200 OK\r\n\r\n";
+  int bytes_sent = send(client_fd, response, strlen(response), 0);
+  if (bytes_sent < 0) {
+    std::cerr << "Failed to send response\n";
+  } else {
+1
+    std::cout << "OK Response sent\n";
+  }
+  
+  close(client_fd); // Close the client socket, not the server socket
+  close(client_fd);
   close(server_fd);
-
+  
   return 0;
 }
