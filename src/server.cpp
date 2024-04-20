@@ -106,7 +106,7 @@ int main(int argc, char **argv) {
   res_content.append(CRLF);
 
   write(client_fd, res_content.c_str(), res_content.length());
- if(status == 200){
+ if(status1 == 200){
   std::string res_content(HTTP_VER); 
   res_content.append(SP);
   res_content.append("200");
