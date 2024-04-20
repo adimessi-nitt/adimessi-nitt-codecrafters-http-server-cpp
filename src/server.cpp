@@ -95,11 +95,11 @@ int main(int argc, char **argv) {
   if(strcmp(tok, "/")) status = 400;
 
   // handling the response
-  char *status = "200";
+  char *status1 = "200";
   char *reason = "ok";
   std::string res_content(HTTP_VER); 
   res_content.append(SP);
-  res_content.append(status);
+  res_content.append(status1);
   res_content.append(SP);
   res_content.append(reason);
   res_content.append(CRLF);
