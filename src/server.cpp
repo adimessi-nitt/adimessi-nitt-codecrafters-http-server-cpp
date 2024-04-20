@@ -96,7 +96,7 @@ int main(int argc, char **argv) {
 
   // handling the response
   char *status1 = "200";
-  char *reason = "ok";
+  char *reason = "OK";
   std::string res_content(HTTP_VER); 
   res_content.append(SP);
   res_content.append(status1);
