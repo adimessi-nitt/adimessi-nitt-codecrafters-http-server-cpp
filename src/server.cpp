@@ -148,7 +148,7 @@ if(strcmp(path, "/") == 0){
 }
 if(send(client_fd, message, strlen(message), 0)<0){
   std::cerr<<"failed to send response...";
-
+}
 message = "HTTP/1.1 404 Not Found\r\n\r\n";
 std:: string s(path);
 if(s.find("/echo/")!=0){
@@ -160,7 +160,7 @@ if(s.find("/echo/")!=0){
     }
   }
   else {
-    message = "HTTP/1,1 404 Not Found\r\n\r\n";
+    message = "HTTP/1.1 404 Not Found\r\n\r\n";
     if(send(client_fd, message, strlen(message), 0)<0){
       std:: cerr<< "Failed to send response...";
       return 1;
