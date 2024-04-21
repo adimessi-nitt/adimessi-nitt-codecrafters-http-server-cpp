@@ -77,58 +77,80 @@ int main(int argc, char **argv) {
 
   // return 0;
 
-  int status  = 200;
-  char buff[1024];
-  int readbyt;
-  readbyt = read(client_fd, buff, 1023);
-  buff[readbyt] = '\0';
+//   int status  = 200;
+//   char buff[1024];
+//   int readbyt;
+//   readbyt = read(client_fd, buff, 1023);
+//   buff[readbyt] = '\0';
 
-  do{
-    readbyt = read(client_fd, buff, 1023);
-    buff[readbyt] = '\0';
-    std::cout <<readbyt<<std::endl;
-  }while(readbyt>0 and readbyt>=1023);
+//   do{
+//     readbyt = read(client_fd, buff, 1023);
+//     buff[readbyt] = '\0';
+//     std::cout <<readbyt<<std::endl;
+//   }while(readbyt>0 and readbyt>=1023);
 
-  char *tok = strtok(buff, " ");
-  tok = strtok(NULL, " ");
-  std:: cout<<tok ;
-  if(strcmp(tok, "/")) status = 400;
+//   char *tok = strtok(buff, " ");
+//   tok = strtok(NULL, " ");
+//   std:: cout<<tok ;
+//   if(strcmp(tok, "/")) status = 400;
 
-  // handling the response
-  char *status1 = "200";
-  char *reason = "OK";
-  std::string res_content(HTTP_VER); 
-  res_content.append(SP);
-  res_content.append(status1);
-  res_content.append(SP);
-  res_content.append(reason);
-  res_content.append(CRLF);
-  res_content.append(CRLF);
+//   // handling the response
+//   char *status = "200";
+//   char *reason = "OK";
+//   std::string res_content(HTTP_VER); 
+//   res_content.append(SP);
+//   res_content.append(status);
+//   res_content.append(SP);
+//   res_content.append(reason);
+//   res_content.append(CRLF);
+//   res_content.append(CRLF);
 
-  write(client_fd, res_content.c_str(), res_content.length());
- if(status1 == 200){
-  std::string res_content(HTTP_VER); 
-  res_content.append(SP);
-  res_content.append("200");
-  res_content.append(SP);
-  res_content.append("OK");
-  res_content.append(CRLF);
-  res_content.append(CRLF);
-  write(client_fd, res_content.c_str(), res_content.length());
- } 
- else {
-  std::string res_content(HTTP_VER); 
-  res_content.append(SP);
-  res_content.append("400");
-  res_content.append(SP);
-  res_content.append("NOT Found response");
-  res_content.append(CRLF);
-  res_content.append(CRLF);
-  write(client_fd, res_content.c_str(), res_content.length());
+//   write(client_fd, res_content.c_str(), res_content.length());
+//  if(status == 200){
+//   std::string res_content(HTTP_VER); 
+//   res_content.append(SP);
+//   res_content.append("200");
+//   res_content.append(SP);
+//   res_content.append("OK");
+//   res_content.append(CRLF);
+//   res_content.append(CRLF);
+//   write(client_fd, res_content.c_str(), res_content.length());
+//  } 
+//  else {
+//   std::string res_content(HTTP_VER); 
+//   res_content.append(SP);
+//   res_content.append("400");
+//   res_content.append(SP);
+//   res_content.append("NOT Found response");
+//   res_content.append(CRLF);
+//   res_content.append(CRLF);
+//   write(client_fd, res_content.c_str(), res_content.length());
 
- }
- close(client_fd);
- close(server_fd);
+//  }
+//  close(client_fd);
+//  close(server_fd);
 
- return 0;
+//  return 0;
+// }
+
+const char *message = "HTTP/1.1 200 OK \r\n\r\n";
+char http_req[BUFSIZ];
+int bytes_size = read(client_fd, http_req, BUFSIZ);
+if(bytes_size<0){
+  std:: cerr<<"failed to read data...";
 }
+http_req[bytes_size]= '\0';
+strtok(http_req, " ");
+char *path = strtok(NULL, " ");
+const char *message = "HTTP/1,1 404 Not Found \r\n\r\n";
+if(strcmp(path, "/") == 0){
+  message = "HTTP/1.1 200 OK\r\n\r\n";
+}
+if(send(client_fd, message, strlen(message), 0)<0){
+  std::cerr<<"failed to send response...";
+}
+close(client_fd);
+close(server_fd);
+return 0;
+}
+
