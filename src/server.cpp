@@ -142,7 +142,7 @@ if(bytes_size<0){
 http_req[bytes_size]= '\0';
 strtok(http_req, " ");
 char *path = strtok(NULL, " ");
-message = "HTTP/1.1 404 Not Found \r\n\r\n";
+message = "HTTP/1.1 200 OK\r\n\r\n";
 if(strcmp(path, "/") == 0){
   message = "HTTP/1.1 200 OK\r\n\r\n";
 }
