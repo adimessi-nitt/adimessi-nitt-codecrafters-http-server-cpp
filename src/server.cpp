@@ -149,6 +149,39 @@ if(strcmp(path, "/") == 0){
 if(send(client_fd, message, strlen(message), 0)<0){
   std::cerr<<"failed to send response...";
 }
+std:: string s(path);
+if(s.find("/echo/")!=0){
+  if(s=="/"){
+    const char* message = "HTTP/1.1 200 OK\r\n\r\n";
+    if(send(client_fd, message, strlen(message), 0)<0){
+      std:: cerr<< "Failed to send response...";
+      return 1;
+    }
+  }
+  else {
+    const char* message = "HTTP/1,1 404 Not Found\r\n\r\n";
+    if(send(client_fd, message, strlen(message), 0)<0){
+      std:: cerr<< "failed to send response...";
+      return 1;
+    }
+  }
+}
+else {
+  s.erase(0, 6);
+  std:: string response = "HTTP/1.1 200 OK\r\n";
+  response += "Content-Type: text/plain\r\n";
+  response += "Content-Length: "; 
+  response += std:: to_string(s.length());
+  response += "\r\n\r\n";
+  response += s;
+  response += "\r\n";
+  std:: cout<<response;
+  const char*message = response.c_str();
+  if(send(client_fd, message, strlen(message), 0)<0){
+    std:: cerr<<"failed to send reponse...";
+    return 1;
+  }
+}
 close(client_fd);
 close(server_fd);
 return 0;
