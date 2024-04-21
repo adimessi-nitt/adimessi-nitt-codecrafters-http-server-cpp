@@ -133,7 +133,7 @@ int main(int argc, char **argv) {
 //  return 0;
 // }
 
-const char *message = "HTTP/1.1 200 OK \r\n\r\n";
+const char *message = "HTTP/1.1 200 OK\r\n\r\n";
 char http_req[BUFSIZ];
 int bytes_size = read(client_fd, http_req, BUFSIZ);
 if(bytes_size<0){
@@ -142,7 +142,7 @@ if(bytes_size<0){
 http_req[bytes_size]= '\0';
 strtok(http_req, " ");
 char *path = strtok(NULL, " ");
-const char *message = "HTTP/1,1 404 Not Found \r\n\r\n";
+message = "HTTP/1,1 404 Not Found \r\n\r\n";
 if(strcmp(path, "/") == 0){
   message = "HTTP/1.1 200 OK\r\n\r\n";
 }
