@@ -13,7 +13,7 @@
 // Include for send function
 
 #define CRLF "\r\n"
-#define HTTP_VER "HTTP/1.1"
+#define HTTP_VER "HTTP/1.1" 
 #define SP " "
 int main(int argc, char **argv) {
   // You can use print statements as follows for debugging, they'll be visible when running tests.
@@ -59,7 +59,10 @@ int main(int argc, char **argv) {
     std::cerr << "Failed to accept client connection\n";
     return 1;
   }
-  
+
+
+
+
   // std::cout << "Client connected\n";
   // std::cout << "Sending response\n";
   // const char *response = "HTTP/1.1 200 OK\r\n\r\n";
@@ -77,40 +80,40 @@ int main(int argc, char **argv) {
 
   // return 0;
 
-//   int status  = 200;
-//   char buff[1024];
-//   int readbyt;
-//   readbyt = read(client_fd, buff, 1023);
-//   buff[readbyt] = '\0';
+  // int status  = 200;
+  // char buff[1024];
+  // int readbyt;
+  // readbyt = read(client_fd, buff, 1023);
+  // buff[readbyt] = '\0';
 
-//   do{
-//     readbyt = read(client_fd, buff, 1023);
-//     buff[readbyt] = '\0';
-//     std::cout <<readbyt<<std::endl;
-//   }while(readbyt>0 and readbyt>=1023);
+  // do{
+  //   readbyt = read(client_fd, buff, 1023);
+  //   buff[readbyt] = '\0';
+  //   std::cout <<readbyt<<std::endl;
+  // }while(readbyt>0 and readbyt>=1023);
 
-//   char *tok = strtok(buff, " ");
-//   tok = strtok(NULL, " ");
-//   std:: cout<<tok ;
-//   if(strcmp(tok, "/")) status = 400;
+  // char *tok = strtok(buff, " ");
+  // tok = strtok(NULL, " ");
+  // std:: cout<<tok ;
+  // if(strcmp(tok, "/")) status = 404;
 
-//   // handling the response
-//   char *status = "200";
-//   char *reason = "OK";
-//   std::string res_content(HTTP_VER); 
-//   res_content.append(SP);
-//   res_content.append(status);
-//   res_content.append(SP);
-//   res_content.append(reason);
-//   res_content.append(CRLF);
-//   res_content.append(CRLF);
+  // handling the response
+  // char *status = "200";
+  // char *reason = "OK";
+  // std::string res_content(HTTP_VER); 
+  // res_content.append(SP);
+  // res_content.append(status);
+  // res_content.append(SP);
+  // res_content.append(reason);
+  // res_content.append(CRLF);
+  // res_content.append(CRLF);
 
-//   write(client_fd, res_content.c_str(), res_content.length());
+  // write(client_fd, res_content.c_str(), res_content.length());
 //  if(status == 200){
 //   std::string res_content(HTTP_VER); 
 //   res_content.append(SP);
 //   res_content.append("200");
-//   res_content.append(SP);
+//   res_content.append(SP); 
 //   res_content.append("OK");
 //   res_content.append(CRLF);
 //   res_content.append(CRLF);
@@ -133,58 +136,91 @@ int main(int argc, char **argv) {
 //  return 0;
 // }
 
+// 
+
+
 // const char *message = "HTTP/1.1 200 OK\r\n\r\n";
 char http_req[BUFSIZ];
-int bytes_size = read(client_fd, http_req, BUFSIZ);
+ssize_t bytes_size = read(client_fd, http_req, BUFSIZ);
 if(bytes_size<0){
   std:: cerr<<"failed to read data...";
 }
 http_req[bytes_size]= '\0';
-strtok(http_req, " ");
-char *path = strtok(NULL, " ");
-const char*message = "HTTP/1.1 404 Not Found\r\n\r\n";
-if(strcmp(path, "/") == 0){
-  message = "HTTP/1.1 200 OK\r\n\r\n";
-}
-if(send(client_fd, message, strlen(message), 0)<0){
-  std::cerr<<"failed to send response...";
-}
-message = "HTTP/1.1 404 Not Found\r\n\r\n";
-std:: string s(path);
-if(s.find("/echo/")!=0){
-  if(s=="/"){
-    message = "HTTP/1.1 200 OK\r\n\r\n";
-    if(send(client_fd, message, strlen(message), 0)<0){
-      std:: cerr<< "Failed to send response...";
-      return 1;
-    }
-  }
-  else {
-    message = "HTTP/1.1 404 Not Found\r\n\r\n";
-    if(send(client_fd, message, strlen(message), 0)<0){
-      std:: cerr<< "Failed to send response...";
-      return 1;
-    }
+std:: string path;
+std:: string request(http_req);
+
+size_t methodEnd = request.find(' ');
+if(methodEnd != std::string::npos){
+  auto start = methodEnd + 1;
+  auto end = request.find(' ', start);
+
+  if(end!=std::string::npos){
+    path = request.substr(start, end-start);
   }
 }
-else {
-  s.erase(0, 6);
-  std:: string response = "HTTP/1.1 200 OK\r\n";
-  response += "Content-Type: text/plain\r\n";
-  response += "Content-Length: "; 
-  response += std:: to_string(s.length());
-  response += "\r\n\r\n";
-  response += s;
-  response += "\r\n";
-  std:: cout<<response;
-  const char*message = response.c_str();
-  if(send(client_fd, message, strlen(message), 0)<0){
-    std:: cerr<<"failed to send reponse...";
-    return 1;
-  }
+
+std::string response;
+if(path =="/"){
+  response = "HTTP/1.1 200 OK\r\n\r\n";
 }
+else if(path.find("/echo/") == 0){
+  std::string content = path.substr(6);
+  response = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: "+ std::to_string(content.size()) + "\r\n\r\n" + content;
+}
+else{
+   response = "HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\n\r\n";
+}
+ssize_t server_send =send(client_fd, response.c_str(), response.size(), 0);
+
+if(server_send==-1){
+  std:: cerr<<"Server failed to send response"<< std:: endl;
+  close(client_fd);
+  return -1;
+}
+// strtok(http_req, " ");
+// char *path = strtok(NULL, " ");
+// const char*message = "HTTP/1.1 404 Not Found\r\n\r\n";
+// if(strcmp(path, "/") == 0){
+//   message = "HTTP/1.1 200 OK\r\n\r\n";
+// }
+// if(send(client_fd, message, strlen(message), 0)<0){
+//   std::cerr<<"failed to send response...";
+// }
+// message = "HTTP/1.1 404 Not Found\r\n\r\n";
+// std:: string s(path);
+// if(s.find("/echo/")!=0){
+//   if(s=="/"){
+//     message = "HTTP/1.1 200 OK\r\n\r\n";
+//     if(send(client_fd, message, strlen(message), 0)<0){
+//       std:: cerr<< "Failed to send response...";
+//       return 1;
+//     }
+//   }
+//   else {
+//     message = "HTTP/1.1 404 Not Found\r\n\r\n";
+//     if(send(client_fd, message, strlen(message), 0)<0){
+//       std:: cerr<< "Failed to send response...";
+//       return 1;
+//     }
+//   }
+// }
+// else {
+//   s.erase(0, 6);
+//   std:: string response = "HTTP/1.1 200 OK\r\n";
+//   response += "Content-Type: text/plain\r\n";
+//   response += "Content-Length: "; 
+//   response += std:: to_string(s.length());
+//   response += "\r\n\r\n";
+//   response += s;
+//   response += "\r\n";
+//   std:: cout<<response;
+//   const char*message = response.c_str();
+//   if(send(client_fd, message, strlen(message), 0)<0){
+//     std:: cerr<<"failed to send reponse...";
+//     return 1;
+//   }
+// }
 close(client_fd);
 close(server_fd);
 return 0;
 }
-
