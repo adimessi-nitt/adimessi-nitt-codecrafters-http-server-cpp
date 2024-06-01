@@ -187,7 +187,7 @@ else if(path.find("/user")==0){
   for(auto &elem:comps){
     if(elem.find("User")==0){
       vector<string> temp = split(elem, " ");
-      text =temp[i];
+      text =temp[1];
       break;
     }
   }
