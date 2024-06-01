@@ -8,13 +8,26 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <netinet/in.h> 
+#include <bits/stdc++.h>
 // Add this line for sockaddr_in
 #include<cstdio>
 // Include for send function
-
+using namespace std;
 #define CRLF "\r\n"
 #define HTTP_VER "HTTP/1.1" 
 #define SP " "
+vector<string> split(string &request, string delim)
+{
+    stringstream ss (request);
+    vector<string> comps;
+    string temp;
+    while(getline(ss, temp, delim[0]))
+    {
+      comps.push_back(temp);
+      ss.ignore(delim.size()-1);
+    }
+    return comps;
+}
 int main(int argc, char **argv) {
   // You can use print statements as follows for debugging, they'll be visible when running tests.
   std::cout << "Logs from your program will appear here!\n";
@@ -143,11 +156,13 @@ int main(int argc, char **argv) {
 char http_req[BUFSIZ];
 ssize_t bytes_size = read(client_fd, http_req, BUFSIZ);
 if(bytes_size<0){
-  std:: cerr<<"failed to read data...";
+  cerr<<"failed to read data...";
 }
 http_req[bytes_size]= '\0';
-std:: string path;
-std:: string request(http_req);
+string path;
+string request(http_req);
+
+vector<string> comps = split(request, "\r\n");
 
 size_t methodEnd = request.find(' ');
 if(methodEnd != std::string::npos){
@@ -159,13 +174,24 @@ if(methodEnd != std::string::npos){
   }
 }
 
-std::string response;
+string response;
 if(path =="/"){
   response = "HTTP/1.1 200 OK\r\n\r\n";
 }
 else if(path.find("/echo/") == 0){
   std::string content = path.substr(6);
-  response = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: "+ std::to_string(content.size()) + "\r\n\r\n" + content;
+  response = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: "+ to_string(content.size()) + "\r\n\r\n" + content;
+}
+else if(path.find("/user")==0){
+  string text;
+  for(auto &elem:comps){
+    if(elem.find("User")==0){
+      vector<string> temp = split(elem, " ");
+      text =temp[i];
+      break;
+    }
+  }
+  response = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length:" + to_string(text.size()) + "\r\n\r\n" + text;
 }
 else{
    response = "HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\n\r\n";
