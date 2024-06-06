@@ -11,10 +11,13 @@
 #include <vector>
 #include <thread>
 #include <mutex>
+#include<fstream>
+#include<filesystem>
 
 #define PORT 4221
 #define BUFFER_SIZE 1024
 #define CONNECTION_BACKLOG 5
+std::string directory;
 
 std::mutex cout_mutex; // Mutex for synchronized console output
 
@@ -77,16 +80,30 @@ void handleClient(int client_fd) {
             }
         }
         response = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: " + std::to_string(text.size()) + "\r\n\r\n" + text;
-    } else {
+    }else if(path.find("/files/")==0){
+        std::string filename = path.substr(7);
+        std::string filepath = directory + "/" + filename;
+        if(std::filesystem::exists(filepath)){
+            std::ifstream file(filepath, std::ios::binary);
+            std::ostringstream content;
+            content<<file.rdbuf();
+            std::string fileContent= content.str();
+            response = "HTTP/1.1 200 OK\r\nContent-Type: application/octet-stream\r\nContent-Length: " + std::to_string(fileContent.size()) + "\r\n\r\n" + fileContent;
+        }else{
+            response = "HTTP/1.1 404 Not Found\r\n\r\n"; 
+        }
+    }
+    else {
         response = "HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\n\r\n";
     }
+
+    
 
     ssize_t server_send = send(client_fd, response.c_str(), response.size(), 0);
     if (server_send == -1) {
         std::lock_guard<std::mutex> lock(cout_mutex);
         std::cerr << "Server failed to send response" << std::endl;
     }
-
     close(client_fd);
     {
         std::lock_guard<std::mutex> lock(cout_mutex);
@@ -94,8 +111,14 @@ void handleClient(int client_fd) {
     }
 }
 
-int main() {
+int main(int argc, char* argv[]) {
+    if (argc >= 3 && std::string(argv[1]) == "--directory") {
+        directory = argv[2];
+    } else {
+        std::cerr << "Usage: " << argv[0] << " --directory <path_to_directory>" << std::endl;
+    }
     std::cout << "Logs from your program will appear here!\n";
+    std::cout<<"Files from the directory: "<< directory <<std::endl;
 
     int server_fd = socket(AF_INET, SOCK_STREAM, 0);
     if (server_fd < 0) {
