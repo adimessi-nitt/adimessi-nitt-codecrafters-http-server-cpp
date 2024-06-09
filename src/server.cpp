@@ -1,4 +1,3 @@
-
 #include <iostream>
 #include <string>
 #include <cstring>
@@ -11,12 +10,12 @@
 #include <vector>
 #include <thread>
 #include <mutex>
-#include<fstream>
-#include<filesystem>
+#include <fstream>
+#include <filesystem>
 
 #define PORT 4221
 #define BUFFER_SIZE 1024
-#define CONNECTION_BACKLOG 5
+#define CONNECTION_BACKLOG 10
 std::string directory;
 
 std::mutex cout_mutex; // Mutex for synchronized console output
@@ -38,8 +37,8 @@ void handleClient(int client_fd) {
         std::cout << "Handling new client on thread: " << std::this_thread::get_id() << std::endl;
     }
 
-    char http_req[BUFFER_SIZE];
-    ssize_t bytes_size = read(client_fd, http_req, BUFFER_SIZE);
+    char buffer[BUFFER_SIZE] = {0};
+    ssize_t bytes_size = read(client_fd, buffer, sizeof(buffer) - 1);
     if (bytes_size < 0) {
         std::lock_guard<std::mutex> lock(cout_mutex);
         std::cerr << "Failed to read data..." << std::endl;
@@ -47,22 +46,23 @@ void handleClient(int client_fd) {
         return;
     }
 
-    http_req[bytes_size] = '\0';
-    std::string request(http_req);
-    std::string path;
-    std::vector<std::string> comps = split(request, "\r\n");
-
-    size_t methodEnd = request.find(' ');
-    if (methodEnd != std::string::npos) {
-        auto start = methodEnd + 1;
-        auto end = request.find(' ', start);
-
-        if (end != std::string::npos) {
-            path = request.substr(start, end - start);
-        }
+    std::string request(buffer);
+    std::string::size_type pos = request.find(' ');
+    if (pos == std::string::npos) {
+        close(client_fd);
+        return;
     }
 
+    std::string method = request.substr(0, pos);
+    std::string::size_type pos2 = request.find(' ', pos + 1);
+    if (pos2 == std::string::npos) {
+        close(client_fd);
+        return;
+    }
+
+    std::string path = request.substr(pos + 1, pos2 - pos - 1);
     std::string response;
+
     if (path == "/") {
         response = "HTTP/1.1 200 OK\r\n\r\n";
     } else if (path.find("/echo/") == 0) {
@@ -70,7 +70,7 @@ void handleClient(int client_fd) {
         response = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: " + std::to_string(content.size()) + "\r\n\r\n" + content;
     } else if (path.find("/user") == 0) {
         std::string text;
-        for (const auto& elem : comps) {
+        for (const auto& elem : split(request, "\r\n")) {
             if (elem.find("User") == 0) {
                 std::vector<std::string> temp = split(elem, " ");
                 if (temp.size() > 1) {
@@ -80,24 +80,50 @@ void handleClient(int client_fd) {
             }
         }
         response = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: " + std::to_string(text.size()) + "\r\n\r\n" + text;
-    }else if(path.find("/files/")==0){
+    } else if (path.find("/files/") == 0) {
         std::string filename = path.substr(7);
         std::string filepath = directory + "/" + filename;
-        if(std::filesystem::exists(filepath)){
-            std::ifstream file(filepath, std::ios::binary);
-            std::ostringstream content;
-            content<<file.rdbuf();
-            std::string fileContent= content.str();
-            response = "HTTP/1.1 200 OK\r\nContent-Type: application/octet-stream\r\nContent-Length: " + std::to_string(fileContent.size()) + "\r\n\r\n" + fileContent;
-        }else{
-            response = "HTTP/1.1 404 Not Found\r\n\r\n"; 
+
+        if (method == "GET") {
+            if (std::filesystem::exists(filepath)) {
+                std::ifstream file(filepath, std::ios::binary);
+                std::ostringstream content;
+                content << file.rdbuf();
+                std::string fileContent = content.str();
+                response = "HTTP/1.1 200 OK\r\nContent-Type: application/octet-stream\r\nContent-Length: " + std::to_string(fileContent.size()) + "\r\n\r\n" + fileContent;
+            } else {
+                response = "HTTP/1.1 404 Not Found\r\n\r\n";
+            }
+        } else if (method == "POST") {
+            size_t contentLength = 0;
+            for (const auto& header : split(request, "\r\n")) {
+                if (header.find("Content-Length:") == 0) {
+                    contentLength = std::stoul(header.substr(16));
+                    break;
+                }
+            }
+
+            std::string::size_type body_pos = request.find("\r\n\r\n");
+            if (body_pos != std::string::npos) {
+                body_pos += 4;
+                std::string body = request.substr(body_pos, contentLength);
+                std::ofstream outfile(filepath, std::ios::binary);
+                if (outfile) {
+                    outfile.write(body.c_str(), body.size());
+                    outfile.close();
+                    response = "HTTP/1.1 201 Created\r\n\r\n";
+                } else {
+                    response = "HTTP/1.1 404 Not Found\r\n\r\n";
+                }
+            } else {
+                response = "HTTP/1.1 404 Not Found\r\n\r\n";
+            }
+        } else {
+            response = "HTTP/1.1 404 Not Found\r\n\r\n";
         }
-    }
-    else {
+    } else {
         response = "HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\n\r\n";
     }
-
-    
 
     ssize_t server_send = send(client_fd, response.c_str(), response.size(), 0);
     if (server_send == -1) {
@@ -114,11 +140,9 @@ void handleClient(int client_fd) {
 int main(int argc, char* argv[]) {
     if (argc >= 3 && std::string(argv[1]) == "--directory") {
         directory = argv[2];
-    } else {
-        std::cerr << "Usage: " << argv[0] << " --directory <path_to_directory>" << std::endl;
     }
     std::cout << "Logs from your program will appear here!\n";
-    std::cout<<"Files from the directory: "<< directory <<std::endl;
+    std::cout << "Files from the directory: " << directory << std::endl;
 
     int server_fd = socket(AF_INET, SOCK_STREAM, 0);
     if (server_fd < 0) {
@@ -161,9 +185,8 @@ int main(int argc, char* argv[]) {
             continue;
         }
 
-        // Handle each client connection in a separate thread
         std::thread client_thread(handleClient, client_fd);
-        client_thread.detach(); // Detach the thread to allow independent execution
+        client_thread.detach();
     }
 
     close(server_fd);
