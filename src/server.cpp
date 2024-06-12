@@ -67,7 +67,23 @@ void handleClient(int client_fd) {
         response = "HTTP/1.1 200 OK\r\n\r\n";
     } else if (path.find("/echo/") == 0) {
         std::string content = path.substr(6);
-        response = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: " + std::to_string(content.size()) + "\r\n\r\n" + content;
+        std::string text;
+        for(const auto& elem: split(request, "\r\n")){
+            if(elem.find("Accept")==0){
+                std::vector<std::string> temp = split(elem, " ");
+                if(temp.size()>1){
+                    text = temp[1];
+                }
+                break;
+            }
+        }
+        if(text.find("invalid")==0){
+            response = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: " + std::to_string(content.size()) + "\r\n\r\n" + content;
+        }
+        else{
+            response = "HTTP/1.1 200 OK\r\nContent-Encoding: " + text +"\r\n"+ "Content-Type: text/plain" + "\r\n" + "Content-Length: " + std::to_string(content.size()) + "\r\n\r\n" + content;
+        }
+        
     } else if (path.find("/user") == 0) {
         std::string text;
         for (const auto& elem : split(request, "\r\n")) {
