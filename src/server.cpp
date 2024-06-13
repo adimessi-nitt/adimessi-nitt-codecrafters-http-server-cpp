@@ -62,7 +62,7 @@ void handleClient(int client_fd) {
 
     std::string path = request.substr(pos + 1, pos2 - pos - 1);
     std::string response;
-
+    bool found = false;
     if (path == "/") {
         response = "HTTP/1.1 200 OK\r\n\r\n";
     } else if (path.find("/echo/") == 0) {
@@ -71,17 +71,21 @@ void handleClient(int client_fd) {
         for(const auto& elem: split(request, "\r\n")){
             if(elem.find("Accept")==0){
                 std::vector<std::string> temp = split(elem, " ");
-                if(temp.size()>1){
-                    text = temp[1];
+                int n = temp.size();
+                for(int i=0; i<n; i++){
+                    if(temp[i].find("gzip")==0){
+                        found = true;
+                        break;
+                    }
                 }
                 break;
             }
         }
-        if(text.find("invalid")==0){
+        if(!found){
             response = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: " + std::to_string(content.size()) + "\r\n\r\n" + content;
         }
         else{
-            response = "HTTP/1.1 200 OK\r\nContent-Encoding: " + text +"\r\n"+ "Content-Type: text/plain" + "\r\n" + "Content-Length: " + std::to_string(content.size()) + "\r\n\r\n" + content;
+            response = "HTTP/1.1 200 OK\r\nContent-Encoding: gzip\r\nContent-Type: text/plain\r\nContent-Length: " + std::to_string(content.size()) + "\r\n\r\n" + content;
         }
         
     } else if (path.find("/user") == 0) {
