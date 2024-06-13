@@ -9,3 +9,12 @@ add_executable(server ${SOURCE_FILES})
 
 # Link the pthread library
 target_link_libraries(server pthread)
+
+# Find the zlib library
+find_package(ZLIB REQUIRED)
+
+# # Create the executable
+# add_executable(server ${SOURCE_FILES})
+
+# Link the zlib library
+target_link_libraries(server ZLIB::ZLIB)

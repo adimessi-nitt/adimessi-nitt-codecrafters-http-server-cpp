@@ -12,6 +12,8 @@
 #include <mutex>
 #include <fstream>
 #include <filesystem>
+#include <zlib.h>
+#include <iomanip>
 
 #define PORT 4221
 #define BUFFER_SIZE 1024
@@ -19,6 +21,52 @@
 std::string directory;
 
 std::mutex cout_mutex; // Mutex for synchronized console output
+
+std::string toHex(const std::string& str) {
+    std::ostringstream oss;
+    for (unsigned char c : str) {
+        oss << std::hex << std::setw(2) << std::setfill('0') << (int)c;
+    }
+    return oss.str();
+}
+
+// Function to compress a string using zlib
+std::string gzipCompress(const std::string& str) {
+    // Initialize the zlib stream
+    z_stream zs;
+    memset(&zs, 0, sizeof(zs));
+
+    if (deflateInit2(&zs, Z_BEST_COMPRESSION, Z_DEFLATED, 15 + 16, 8, Z_DEFAULT_STRATEGY) != Z_OK) {
+        throw std::runtime_error("deflateInit2 failed");
+    }
+
+    zs.next_in = (Bytef*)str.data();
+    zs.avail_in = str.size();
+
+    int ret;
+    char outbuffer[32768];
+    std::string outstring;
+
+    // Process the input string in chunks
+    do {
+        zs.next_out = reinterpret_cast<Bytef*>(outbuffer);
+        zs.avail_out = sizeof(outbuffer);
+
+        ret = deflate(&zs, Z_FINISH);
+
+        if (outstring.size() < zs.total_out) {
+            outstring.append(outbuffer, zs.total_out - outstring.size());
+        }
+    } while (ret == Z_OK);
+
+    deflateEnd(&zs);
+
+    if (ret != Z_STREAM_END) {
+        throw std::runtime_error("Exception during zlib compression: " + std::to_string(ret));
+    }
+
+    return outstring;
+}
 
 std::vector<std::string> split(const std::string& request, const std::string& delim) {
     std::stringstream ss(request);
@@ -81,11 +129,14 @@ void handleClient(int client_fd) {
                 break;
             }
         }
+        std::string compressed = gzipCompress(content);
+        std::string hex = toHex(compressed);
+
         if(!found){
             response = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: " + std::to_string(content.size()) + "\r\n\r\n" + content;
         }
         else{
-            response = "HTTP/1.1 200 OK\r\nContent-Encoding: gzip\r\nContent-Type: text/plain\r\nContent-Length: " + std::to_string(content.size()) + "\r\n\r\n" + content;
+            response = "HTTP/1.1 200 OK\r\nContent-Encoding: gzip\r\nContent-Type: text/plain\r\nContent-Length: " + std::to_string(compressed.size()) + "\r\n\r\n" + compressed;
         }
         
     } else if (path.find("/user") == 0) {
